@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Weather Info</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 50%, #fad0c4 100%);
+      background-size: 400% 400%;
+      animation: gradientBG 15s ease infinite;
+      color: #fff;
+      text-align: center;
+      padding: 50px;
+      perspective: 1000px;
+    }
+
+    @keyframes gradientBG {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .container {
+      background-color: rgba(0, 0, 0, 0.5);
+      padding: 30px;
+      border-radius: 20px;
+      display: inline-block;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+      max-width: 500px;
+      width: 100%;
+      transform: rotateY(10deg);
+      transition: transform 0.5s;
+    }
+
+    .container:hover {
+      transform: rotateY(0deg) scale(1.05);
+    }
+
+    input, button {
+      padding: 12px;
+      font-size: 16px;
+      margin: 10px;
+      border: none;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    input {
+      width: 60%;
+    }
+
+    button {
+      background-color: #ffa726;
+      color: #fff;
+      cursor: pointer;
+      transition: background-color 0.3s, transform 0.3s;
+    }
+
+    button:hover {
+      background-color: #ffb74d;
+      transform: scale(1.1);
+    }
+
+    #result {
+      margin-top: 20px;
+      text-align: left;
+    }
+
+    .weather-box {
+      background-color: rgba(255,255,255,0.1);
+      padding: 20px;
+      border-radius: 15px;
+      margin-top: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      animation: fadeIn 1s ease-in-out;
+    }
+
+    .forecast {
+      margin-top: 20px;
+    }
+
+    .forecast-day {
+      background-color: rgba(255,255,255,0.1);
+      padding: 15px;
+      border-radius: 10px;
+      margin: 10px 0;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      animation: fadeIn 0.8s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    nav {
+      margin-top: 20px;
+    }
+    nav a:hover {
+      text-decoration: underline;
+    }
+  </style>
+  <link rel="stylesheet" href="style.css">
+  <script>
+    function detectLocationAndSave() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(position => {
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+          const location = `${lat},${lon}`;
+          localStorage.setItem('selectedCity', location);
+        }, error => {
+          console.error("Geolocation error:", error);
+        });
+      } else {
+        console.error("Geolocation is not supported by this browser.");
+      }
+    }
+
+    window.onload = detectLocationAndSave;
+
+    function updateBackgroundColor(temp) {
+      const body = document.body;
+      if (temp <= 0) {
+        body.style.background = "linear-gradient(to right, #00c6ff, #0072ff)"; // Cold
+      } else if (temp > 0 && temp <= 20) {
+        body.style.background = "linear-gradient(to right, #56ccf2, #2f80ed)"; // Cool
+      } else if (temp > 20 && temp <= 30) {
+        body.style.background = "linear-gradient(to right, #ffe259, #ffa751)"; // Warm
+      } else {
+        body.style.background = "linear-gradient(to right, #ff512f, #dd2476)"; // Hot
+      }
+    }
+
+    function updateBackgroundAndSky(temp, time) {
+      const body = document.body;
+      const resultDiv = document.getElementById("result");
+
+      // Clear previous sky elements
+      resultDiv.innerHTML = "";
+
+      if (time >= 6 && time < 18) { // Morning to evening
+        body.style.background = "linear-gradient(to right, #56ccf2, #2f80ed)"; // Daytime sky
+        resultDiv.innerHTML += '<div style="font-size: 100px;">☀</div>'; // Sun
+      } else if (time >= 18 && time < 21) { // Evening
+        body.style.background = "linear-gradient(to right, #ff9a9e, #fad0c4)"; // Sunset sky
+        resultDiv.innerHTML += '<div style="font-size: 100px;">🌙</div>'; // Moon
+      } else { // Night
+        body.style.background = "linear-gradient(to right, #2f80ed, #000428)"; // Night sky
+        resultDiv.innerHTML += '<div style="font-size: 100px;">🌙</div>'; // Moon
+        resultDiv.innerHTML += '<div style="font-size: 50px;">✨✨✨</div>'; // Stars
+      }
+    }
+
+    function updateWeatherAnimation(condition) {
+      const resultDiv = document.getElementById("result");
+      let animationHTML = "";
+
+      if (condition.toLowerCase().includes("rain")) {
+        animationHTML = '<div style="font-size: 50px;">🌧💧💧💧</div>'; // Rain animation
+      } else if (condition.toLowerCase().includes("snow")) {
+        animationHTML = '<div style="font-size: 50px;">❄❄❄</div>'; // Snow animation
+      } else if (condition.toLowerCase().includes("cloud")) {
+        animationHTML = '<div style="font-size: 50px;">☁☁☁</div>'; // Cloudy animation
+      } else if (condition.toLowerCase().includes("clear")) {
+        animationHTML = '<div style="font-size: 50px;">☀</div>'; // Clear sky animation
+      } else if (condition.toLowerCase().includes("fog")) {
+        animationHTML = '<div style="font-size: 50px;">🌫🌫🌫</div>'; // Fog animation
+      } else {
+        animationHTML = '<div style="font-size: 50px;">🌤</div>'; // Default animation
+      }
+
+      resultDiv.innerHTML += animationHTML;
+    }
+
+    function updateWeatherEffects(condition, time) {
+      const resultDiv = document.getElementById("result");
+      let effectHTML = "";
+
+      if (time >= 5 && time < 7) { // Sunrise effect
+        effectHTML = '<div style="font-size: 50px; color: orange;">🌅 Sunrise</div>';
+      } else if (time >= 18 && time < 20) { // Sunset effect
+        effectHTML = '<div style="font-size: 50px; color: red;">🌇 Sunset</div>';
+      } else if (condition.toLowerCase().includes("hot")) { // Hot effect
+        effectHTML = '<div style="font-size: 50px; color: red;">🔥 Hot Weather</div>';
+      } else if (condition.toLowerCase().includes("cold")) { // Cold effect
+        effectHTML = '<div style="font-size: 50px; color: blue;">❄ Cold Weather</div>';
+      } else if (condition.toLowerCase().includes("rain")) { // Monsoon effect
+        effectHTML = '<div style="font-size: 50px; color: green;">🌧 Monsoon</div>';
+      }
+
+      resultDiv.innerHTML += effectHTML;
+    }
+
+    function getWeather() {
+      const city = document.getElementById("cityInput").value.trim();
+      const resultDiv = document.getElementById("result");
+
+      if (!city) {
+        resultDiv.innerHTML = "❗ Please enter a city name.";
+        return;
+      }
+
+      saveCityToLocalStorage(city); // Save the city to localStorage
+
+      const currentWeatherUrl = `http://api.weatherapi.com/v1/current.json?key=${apiKey}&q=${encodeURIComponent(city)}&aqi=yes`;
+      const forecastUrl = `http://api.weatherapi.com/v1/forecast.json?key=${apiKey}&q=${encodeURIComponent(city)}&days=3`;
+
+      resultDiv.innerHTML = "Loading...";
+
+      console.log("Fetching current weather from:", currentWeatherUrl);
+      console.log("Fetching forecast from:", forecastUrl);
+
+      Promise.all([
+        fetch(currentWeatherUrl).then(res => {
+          console.log("Current weather response status:", res.status);
+          return res.json();
+        }),
+        fetch(forecastUrl).then(res => {
+          console.log("Forecast response status:", res.status);
+          return res.json();
+        })
+      ])
+      .then(([currentData, forecastData]) => {
+        console.log("Current weather data:", currentData);
+        console.log("Forecast data:", forecastData);
+
+        if (currentData.error) {
+          resultDiv.innerHTML = `<p>❌ ${currentData.error.message}</p>`;
+          return;
+        }
+
+        // Update background and sky based on temperature and time
+        const localTime = new Date(currentData.location.localtime);
+        const hour = localTime.getHours();
+        updateBackgroundAndSky(currentData.current.temp_c, hour);
+
+        // Add weather animation based on condition
+        updateWeatherAnimation(currentData.current.condition.text);
+
+        // Add weather effects based on condition and time
+        updateWeatherEffects(currentData.current.condition.text, hour);
+
+        const weatherHTML = `
+          <div class="weather-box">
+            <h2>📍 ${currentData.location.name}, ${currentData.location.country}</h2>
+            <p>🕒 Local Time: ${currentData.location.localtime}</p>
+            <p>🌡 Temperature: ${currentData.current.temp_c}°C / ${currentData.current.temp_f}°F</p>
+            <p>🌤 Condition: ${currentData.current.condition.text}</p>
+            <img src="https:${currentData.current.condition.icon}" alt="icon">
+            <p>💧 Humidity: ${currentData.current.humidity}%</p>
+            <p>💨 Wind: ${currentData.current.wind_kph} kph</p>
+            <p>🌫 AQI: ${currentData.current.air_quality.pm2_5 ? 'PM2.5: ' + currentData.current.air_quality.pm2_5.toFixed(1) : 'N/A'}</p>
+            <p>💧 Dew Point: ${currentData.current.dewpoint_c}°C</p>
+            <p>🌧 Rain Forecast: ${currentData.current.precip_mm} mm</p>
+            <p>🌧 Chance of Rain: ${forecastData.forecast.forecastday[0].day.daily_chance_of_rain}%</p>
+          </div>
+        `;
+
+        const forecastHTML = forecastData.forecast.forecastday.map(day => `
+          <div class="forecast-day">
+            <h3>${day.date}</h3>
+            <p>🌡 Max Temp: ${day.day.maxtemp_c}°C / ${day.day.maxtemp_f}°F</p>
+            <p>🌡 Min Temp: ${day.day.mintemp_c}°C / ${day.day.mintemp_f}°F</p>
+            <p>🌤 Condition: ${day.day.condition.text}</p>
+            <img src="https:${day.day.condition.icon}" alt="icon">
+          </div>
+        `).join('');
+
+        resultDiv.innerHTML = weatherHTML + `<div class="forecast"><h2>3-Day Forecast</h2>${forecastHTML}<a href="weather-history.html" style="color: #ffa726; text-decoration: none; font-size: 18px;">View Weather History</a></div>`;
+      })
+      .catch(err => {
+        console.error("Error fetching weather data:", err);
+        resultDiv.innerHTML = "Error fetching weather data. Please try again.";
+      });
+    }
+  </script>
+</head>
+<body>
+  <div class="container">
+    <h1>🌤 Real-Time Weather Checker</h1>
+    <input type="text" id="cityInput" placeholder="Enter city name (e.g., London)">
+    <button onclick="getWeather()">Check Weather</button>
+    <input type="date" id="dateInput" placeholder="Select a date">
+    <button onclick="getWeatherByDate()">Check Weather by Date</button>
+    <div id="result">Enter a city to see weather info</div>
+  </div>
+
+  <script>
+    const apiKey = "e74888d32a6f4622a3695826252404"; // ✅ Your WeatherAPI.com key
+
+    function saveCityToLocalStorage(city) {
+      localStorage.setItem('selectedCity', city);
+    }
+
+    function getWeatherByDate() {
+      const city = document.getElementById("cityInput").value.trim();
+      const dateInput = document.getElementById("dateInput");
+      const date = dateInput.value;
+      const resultDiv = document.getElementById("result");
+
+      if (!city) {
+        resultDiv.innerHTML = "❗ Please enter a city name.";
+        return;
+      }
+
+      if (!date) {
+        resultDiv.innerHTML = "❗ Please select a date.";
+        return;
+      }
+
+      // Validate the date format
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (!dateRegex.test(date)) {
+        resultDiv.innerHTML = "❗ Invalid date format. Please use YYYY-MM-DD.";
+        return;
+      }
+
+      const currentDate = new Date().toISOString().split('T')[0];
+      let apiUrl;
+
+      if (date > currentDate) {
+        apiUrl = `http://api.weatherapi.com/v1/forecast.json?key=${apiKey}&q=${encodeURIComponent(city)}&dt=${date}`;
+      } else {
+        apiUrl = `http://api.weatherapi.com/v1/history.json?key=${apiKey}&q=${encodeURIComponent(city)}&dt=${date}`;
+      }
+
+      resultDiv.innerHTML = "Loading...";
+
+      fetch(apiUrl)
+        .then(res => res.json())
+        .then(data => {
+          if (data.error) {
+            resultDiv.innerHTML = `<p>❌ ${data.error.message}</p>`;
+            return;
+          }
+
+          const weatherHTML = `
+            <div class="weather-box">
+              <h2>📍 ${data.location.name}, ${data.location.country}</h2>
+              <p>🕒 Date: ${date}</p>
+              <p>🌡 Max Temp: ${data.forecast.forecastday[0].day.maxtemp_c}°C</p>
+              <p>🌡 Min Temp: ${data.forecast.forecastday[0].day.mintemp_c}°C</p>
+              <p>🌧 Chance of Rain: ${data.forecast.forecastday[0].day.daily_chance_of_rain}%</p>
+              <p>🌤 Condition: ${data.forecast.forecastday[0].day.condition.text}</p>
+              <img src="https:${data.forecast.forecastday[0].day.condition.icon}" alt="icon">
+            </div>
+          `;
+
+          resultDiv.innerHTML = weatherHTML;
+        })
+        .catch(err => {
+          console.error("Error fetching weather data:", err);
+          resultDiv.innerHTML = "Error fetching weather data. Please try again.";
+        });
+    }
+
+    function detectAPIAndFetchWeatherByDate() {
+      const apiKey = "e74888d32a6f4622a3695826252404"; // Replace with your WeatherAPI key
+      const city = document.getElementById("cityInput").value.trim();
+      const date = document.getElementById("dateInput").value;
+      const resultDiv = document.getElementById("result");
+
+      if (!city) {
+        resultDiv.innerHTML = "❗ Please enter a city name.";
+        return;
+      }
+
+      if (!date) {
+        resultDiv.innerHTML = "❗ Please select a date.";
+        return;
+      }
+
+      const historyUrl = `http://api.weatherapi.com/v1/history.json?key=${apiKey}&q=${encodeURIComponent(city)}&dt=${date}`;
+
+      resultDiv.innerHTML = "Detecting API and fetching data...";
+
+      fetch(historyUrl)
+        .then(res => res.json())
+        .then(data => {
+          if (data.error) {
+            resultDiv.innerHTML = `<p>❌ ${data.error.message}</p>`;
+            return;
+          }
+
+          const weatherHTML = `
+            <div class="weather-box">
+              <h2>📍 ${data.location.name}, ${data.location.country}</h2>
+              <p>🕒 Date: ${date}</p>
+              <p>🌡 Max Temp: ${data.forecast.forecastday[0].day.maxtemp_c}°C</p>
+              <p>🌡 Min Temp: ${data.forecast.forecastday[0].day.mintemp_c}°C</p>
+              <p>🌧 Chance of Rain: ${data.forecast.forecastday[0].day.daily_chance_of_rain}%</p>
+              <p>🌤 Condition: ${data.forecast.forecastday[0].day.condition.text}</p>
+              <img src="https:${data.forecast.forecastday[0].day.condition.icon}" alt="icon">
+            </div>
+          `;
+
+          resultDiv.innerHTML = weatherHTML;
+        })
+        .catch(err => {
+          console.error("Error detecting API or fetching weather data:", err);
+          resultDiv.innerHTML = "Error detecting API or fetching weather data. Please try again.";
+        });
+    }
+  </script>
+</body>
+</html>

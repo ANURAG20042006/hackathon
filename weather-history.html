@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Weather History</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #2f80ed, #56ccf2);
+      color: #fff;
+      text-align: center;
+      padding: 50px;
+    }
+
+    .chart-container {
+      width: 80%;
+      margin: 0 auto;
+      background-color: rgba(0, 0, 0, 0.3);
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+    }
+
+    canvas {
+      max-width: 100%;
+      height: auto;
+    }
+
+    nav {
+      margin-top: 20px;
+    }
+    nav a:hover {
+      text-decoration: underline;
+    }
+  </style>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>📊 Weather History and Effects</h1>
+  <nav>
+    <a href="weather.html" style="color: #ffa726; text-decoration: none; font-size: 18px;">Back to Weather Checker</a>
+  </nav>
+  <div>
+      <!-- Removed the input and button for fetching weather history -->
+    </div>
+  <div class="chart-container">
+    <canvas id="weatherChart"></canvas>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    const apiKey = "e74888d32a6f4622a3695826252404"; // Your WeatherAPI.com key
+
+    async function fetchWeatherHistory(city) {
+      const today = new Date().toISOString().split('T')[0]; // Get current date in YYYY-MM-DD format
+      const historyUrl = `http://api.weatherapi.com/v1/history.json?key=${apiKey}&q=${encodeURIComponent(city)}&dt=${today}`;
+
+      try {
+        const response = await fetch(historyUrl);
+        const data = await response.json();
+
+        if (data.error) {
+          console.error("Error fetching weather history:", data.error.message);
+          document.getElementById('error').innerText = data.error.message;
+          return;
+        }
+
+        const labels = data.forecast.forecastday[0].hour.map(hour => hour.time.split(' ')[1]);
+        const temperatureData = data.forecast.forecastday[0].hour.map(hour => hour.temp_c);
+        const humidityData = data.forecast.forecastday[0].hour.map(hour => hour.humidity);
+        const rainData = data.forecast.forecastday[0].hour.map(hour => hour.precip_mm);
+        const chanceOfRainData = data.forecast.forecastday[0].hour.map(hour => hour.chance_of_rain);
+
+        const ctx = document.getElementById('weatherChart').getContext('2d');
+        new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: 'Temperature (°C)',
+                data: temperatureData,
+                backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                borderColor: 'rgba(255, 99, 132, 1)',
+                borderWidth: 1,
+              },
+              {
+                label: 'Humidity (%)',
+                data: humidityData,
+                backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1,
+              },
+              {
+                label: 'Rainfall (mm)',
+                data: rainData,
+                backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1,
+              },
+              {
+                label: 'Chance of Rain (%)',
+                data: chanceOfRainData,
+                backgroundColor: 'rgba(153, 102, 255, 0.5)',
+                borderColor: 'rgba(153, 102, 255, 1)',
+                borderWidth: 1,
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: {
+                position: 'top',
+              },
+              title: {
+                display: true,
+                text: `Hourly Weather Data for ${today}`
+              }
+            },
+            scales: {
+              x: {
+                beginAtZero: true
+              },
+              y: {
+                beginAtZero: true
+              }
+            }
+          }
+        });
+      } catch (error) {
+        console.error("Error fetching weather history:", error);
+        document.getElementById('error').innerText = "Error fetching weather history. Please try again.";
+      }
+    }
+
+    function getCityFromLocalStorage() {
+      const city = localStorage.getItem('selectedCity');
+      if (city) {
+        fetchWeatherHistory(city);
+      } else {
+        document.getElementById('error').innerText = "No city selected. Please go back and select a city.";
+      }
+    }
+
+    window.onload = getCityFromLocalStorage;
+
+    document.getElementById('fetchButton').addEventListener('click', () => {
+      const city = document.getElementById('cityInput').value.trim();
+      if (!city) {
+        document.getElementById('error').innerText = "Please enter a city name.";
+        return;
+      }
+      document.getElementById('error').innerText = ""; // Clear previous errors
+      fetchWeatherHistory(city);
+    });
+
+    function fetchWeatherHistoryFromLocation() {
+      const location = localStorage.getItem('selectedCity');
+      if (location) {
+        fetchWeatherHistory(location);
+      } else {
+        document.getElementById('error').innerText = "Location not detected. Please check the weather first on the main page.";
+        document.querySelector('.chart-container').style.display = 'none'; // Hide chart if no data
+      }
+    }
+
+    window.onload = fetchWeatherHistoryFromLocation;
+  </script>
+</body>
+</html>
